@@ -105,14 +105,61 @@ class MissionDB:
             cursor.close()
             conn.close()
 
+    def count_all_missions(self):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        sql = """SELECT COUNT(*) as count FROM missions;"""
+        try:
+            cursor.execute(sql)
+            count = cursor.fetchone()
+            return count["count"]
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+
+    def count_by_status(self, status):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        sql = """SELECT COUNT(*) as count FROM missions WHERE status = %s;"""
+        try:
+            cursor.execute(sql, (status,))
+            count = cursor.fetchone()
+            return count["count"]
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+    def count_open_missions(self):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        sql = """
+        SELECT COUNT(*) as count FROM missions WHERE
+        status = 'ASSIGNED' OR status = 'IN_PROGRESS';"""
+        try:
+            cursor.execute(sql, (id,))
+            count = cursor.fetchone()
+            return count["count"]
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
 
 
 if __name__ == "__main__":
     mission_manager = MissionDB(DbConnection())
     print(mission_manager.get_all_missions())
     # print(mission_manager.assign_mission(1, 1))
-    print(mission_manager.update_mission_status(1, 'IN_PROGRESS'))
+    # print(mission_manager.update_mission_status(1, 'IN_PROGRESS'))
     print(mission_manager.get_open_missions_by_agent(1))
     print(mission_manager.get_mission_by_id(1))
+    print(mission_manager.count_by_status('IN_PROGRESS'))
+    print(mission_manager.count_all_missions())
+
 
 
