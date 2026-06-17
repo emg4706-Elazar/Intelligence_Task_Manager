@@ -89,14 +89,30 @@ class MissionDB:
             conn.close()
 
 
-            
+    def get_open_missions_by_agent(self, id):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        sql = """
+        SELECT * FROM missions WHERE id = %s
+        AND (status = 'ASSIGNED' OR status = 'IN_PROGRESS');"""
+        try:
+            cursor.execute(sql, (id,))
+            rows = cursor.fetchall()
+            return rows
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+
 
 if __name__ == "__main__":
     mission_manager = MissionDB(DbConnection())
     print(mission_manager.get_all_missions())
     # print(mission_manager.assign_mission(1, 1))
-    print(mission_manager.update_mission_status(1, 'ASSIGNED'))
-
+    print(mission_manager.update_mission_status(1, 'IN_PROGRESS'))
+    print(mission_manager.get_open_missions_by_agent(1))
     print(mission_manager.get_mission_by_id(1))
 
 
