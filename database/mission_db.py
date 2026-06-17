@@ -53,5 +53,30 @@ class MissionDB:
             cursor.close()
             conn.close()
 
+    def assign_mission(self, m_id, a_id):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor()
+        try:
+            sql = """
+            UPDATE missions SET assigned_agent_id = %s  WHERE id = %s;
+            """
+            cursor.execute(sql, (a_id, m_id))
+            conn.commit()
+            rowcount = cursor.rowcount
+            return rowcount > 0
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+    
+
+
+if __name__ == "__main__":
+    mission_manager = MissionDB(DbConnection())
+    print(mission_manager.get_all_missions())
+    print(mission_manager.assign_mission(1, 1))
+    print(mission_manager.get_mission_by_id(1))
 
 
