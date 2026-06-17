@@ -27,19 +27,33 @@ class AgentDB:
 
     def get_all_agents(self):
         conn = self.connection
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         sql = """SELECT * FROM agents;"""
-        cursor.execute(sql)
-        rows = cursor.fetchall()
-        return rows
+        try:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            return rows
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
 
     def get_agent_by_id(self, id):
         conn = self.connection
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         sql = """SELECT * FROM agents WHERE id = %s;"""
-        cursor.execute(sql, id)
-        row = cursor.fetchone()
-        return row
+        try:
+            cursor.execute(sql, (id,))
+            row = cursor.fetchone()
+            return row
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
 
     def update_agent(self, id, data):
         columns = list([str(key) for key in data])
@@ -56,10 +70,65 @@ class AgentDB:
         conn.close()
         return rowcount > 0
 
+    def deactivate_agent(self, id):
+        conn = self.connection
+        cursor = conn.cursor()
+        sql = "UPDATE agents SET is_active = False WHERE id = %s;"
+        try:
+            cursor.execute(sql, (id,))
+            conn.commit()
+            rowcount = cursor.rowcount
+            return rowcount > 0
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+    def increment_completed(self, id):
+        conn = self.connection
+        cursor = conn.cursor()
+        sql = "UPDATE agents SET completed_missions = %s WHERE id = %s;"
+        try:
+            completed_missions = self.get_agent_by_id(id)["completed_missions"]
+            completed_missions += 1
+            cursor.execute(sql, (completed_missions, id))
+            conn.commit()
+            rowcount = cursor.rowcount
+            return rowcount > 0
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+    def increment_failed(self, id):
+        conn = self.connection
+        cursor = conn.cursor()
+        sql = "UPDATE agents SET failed_missions = %s WHERE id = %s;"
+        try:
+            failed_missions = self.get_agent_by_id(id)["failed_missions"]
+            failed_missions += 1
+            cursor.execute(sql, (failed_missions, id))
+            conn.commit()
+            rowcount = cursor.rowcount
+            return rowcount > 0
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+    
+
 
 
 connection_db = DbConnection()
 if __name__ == "__main__":
     age_manager = AgentDB(connection_db)
     data1 = {"name": "Moshe", "specialty": "tech", "agent_rank": "Junior"}
-    print(age_manager.create_agent(data1))
+    # print(age_manager.create_agent(data1))
+
+    print(age_manager.get_all_agents())
+    print(age_manager.increment_completed(1))
+    print(age_manager.get_agent_by_id(1))
