@@ -121,15 +121,32 @@ class AgentDB:
 
     def get_agent_performance(self, id):
         agent = self.get_agent_by_id(id)
-        total = agent["completed_missions"] + agent["failed_missions"]
-        dicti = {
-            "total": total,
-            "failed": agent["failed_missions"],
-            "completed": agent["completed_missions"],
-            "success_rate": round((agent["completed_missions"]/total) * 100, 2)
-        }
-        return dicti
-    
+        if agent:
+            total = agent["completed_missions"] + agent["failed_missions"]
+            summary = {
+                "total": total,
+                "failed": agent["failed_missions"],
+                "completed": agent["completed_missions"],
+                "success_rate": round((agent["completed_missions"]/total) * 100, 2)
+            }
+            return summary
+        return None
+
+
+    def count_active_agents(self):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        sql = """SELECT COUNT(*) as count FROM agents WHERE is_active = True;"""
+        try:
+            cursor.execute(sql)
+            count = cursor.fetchone()
+            return count["count"]
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
 
 
 
@@ -141,7 +158,7 @@ if __name__ == "__main__":
 
     print(age_manager.get_all_agents())
     print(age_manager.increment_failed(1))
-
+    print(age_manager.count_active_agents())
     print(age_manager.increment_completed(1))
     print(age_manager.get_agent_by_id(1))
     print(age_manager.get_agent_performance(1))
