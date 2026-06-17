@@ -70,13 +70,33 @@ class MissionDB:
             cursor.close()
             conn.close()
 
-    
 
+    def update_mission_status(self, id, status):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor()
+        try:
+            sql = """
+            UPDATE missions SET status = %s  WHERE id = %s;
+            """
+            cursor.execute(sql, (status, id))
+            conn.commit()
+            rowcount = cursor.rowcount
+            return rowcount > 0
+        except Exception as e:
+            return f"{e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+
+            
 
 if __name__ == "__main__":
     mission_manager = MissionDB(DbConnection())
     print(mission_manager.get_all_missions())
-    print(mission_manager.assign_mission(1, 1))
+    # print(mission_manager.assign_mission(1, 1))
+    print(mission_manager.update_mission_status(1, 'ASSIGNED'))
+
     print(mission_manager.get_mission_by_id(1))
 
 
