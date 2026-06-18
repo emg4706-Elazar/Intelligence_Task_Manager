@@ -4,6 +4,7 @@ from routes.mission_routes import mission_router
 from routes.report_routes import report_router
 from database.db_connection import DbConnection, q_agents, q_missions
 import uvicorn
+from logs.logging_config import logger
 
 app = FastAPI()
 
