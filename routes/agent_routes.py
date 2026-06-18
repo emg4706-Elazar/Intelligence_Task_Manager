@@ -42,9 +42,16 @@ def put_agent(id, data: Agent):
 
 
 
-# @agent_router.put("/agents/{id}/deactivate")
-#
-#
+@agent_router.put("/agents/{id}/deactivate")
+def deactivate_agent(id: int):
+    agent = agent_db.get_agent_by_id(id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    agent_db.deactivate_agent(id)
+    return "Agent inactive from now"
+
+
 # @agent_router.put("/agents/{id}/performance")
 
 
