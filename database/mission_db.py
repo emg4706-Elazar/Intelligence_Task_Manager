@@ -4,25 +4,32 @@ from database.db_connection import DbConnection
 
 class MissionDB:
     def __init__(self, connection: DbConnection):
-        self.connection = DbConnection()
+        self.connection = connection
 
     def create_mission(self, data):
-        columns = list([str(key) for key in data])
-        values = list([data[key] for key in data])
+        if not data:
+            return None
+
+        columns = ", ".join(data.keys())
+        placeholders = ", ".join(["%s"] * len(data))
+        values = list(data.values())
         conn = self.connection.get_connection()
-        cursor = conn.cursor()
-        sql = """
-        INSERT INTO missions (%s) VALUES %s;
-        """
-        cursor.execute(sql, (columns, values))
-        conn.commit()
-        new_id = cursor.lastrowid
-        cursor.execute("""
-        SELECT * FROM missions WHERE id = %s """, new_id)
-        new_mission = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        return new_mission
+        cursor = conn.cursor(dictionary=True)
+        sql = f"INSERT INTO missions ({columns}) VALUES ({placeholders});"
+        try:
+            cursor.execute(sql, values)
+            conn.commit()
+            new_id = cursor.lastrowid
+            cursor.execute("SELECT * FROM missions WHERE id = %s;", (new_id,))
+            new_mission = cursor.fetchone()
+            return new_mission
+        except Exception as e:
+            conn.rollback()
+            return f"Error as {e}"
+        finally:
+            cursor.close()
+            conn.close()
+
 
     def get_all_missions(self):
         conn = self.connection.get_connection()
@@ -42,16 +49,17 @@ class MissionDB:
     def get_mission_by_id(self, id):
         conn = self.connection.get_connection()
         cursor = conn.cursor(dictionary=True)
-        sql = """SELECT * FROM missions WHERE id = %s;"""
+        sql = "SELECT * FROM missions WHERE id = %s;"
         try:
             cursor.execute(sql, (id,))
             row = cursor.fetchone()
             return row
         except Exception as e:
-            return f"{e}"
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
+
 
     def assign_mission(self, m_id, a_id):
         conn = self.connection.get_connection()
@@ -62,10 +70,10 @@ class MissionDB:
             """
             cursor.execute(sql, (a_id, m_id))
             conn.commit()
-            rowcount = cursor.rowcount
-            return rowcount > 0
+            return cursor.rowcount > 0
         except Exception as e:
-            return f"{e}"
+            conn.rollback()
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -80,10 +88,10 @@ class MissionDB:
             """
             cursor.execute(sql, (status, id))
             conn.commit()
-            rowcount = cursor.rowcount
-            return rowcount > 0
+            return cursor.rowcount > 0
         except Exception as e:
-            return f"{e}"
+            conn.rollback()
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -93,14 +101,14 @@ class MissionDB:
         conn = self.connection.get_connection()
         cursor = conn.cursor(dictionary=True)
         sql = """
-        SELECT * FROM missions WHERE id = %s
+        SELECT * FROM missions WHERE assigned_agent_id = %s
         AND (status = 'ASSIGNED' OR status = 'IN_PROGRESS');"""
         try:
             cursor.execute(sql, (id,))
             rows = cursor.fetchall()
             return rows
         except Exception as e:
-            return f"{e}"
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -108,13 +116,13 @@ class MissionDB:
     def count_all_missions(self):
         conn = self.connection.get_connection()
         cursor = conn.cursor(dictionary=True)
-        sql = """SELECT COUNT(*) as count FROM missions;"""
+        sql = "SELECT COUNT(*) as count FROM missions;"
         try:
             cursor.execute(sql)
             count = cursor.fetchone()
             return count["count"]
         except Exception as e:
-            return f"{e}"
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -123,16 +131,17 @@ class MissionDB:
     def count_by_status(self, status):
         conn = self.connection.get_connection()
         cursor = conn.cursor(dictionary=True)
-        sql = """SELECT COUNT(*) as count FROM missions WHERE status = %s;"""
+        sql = "SELECT COUNT(*) as count FROM missions WHERE status = %s;"
         try:
             cursor.execute(sql, (status,))
             count = cursor.fetchone()
             return count["count"]
         except Exception as e:
-            return f"{e}"
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
+
 
     def count_open_missions(self):
         conn = self.connection.get_connection()
@@ -141,18 +150,38 @@ class MissionDB:
         SELECT COUNT(*) as count FROM missions WHERE
         status = 'ASSIGNED' OR status = 'IN_PROGRESS';"""
         try:
-            cursor.execute(sql, (id,))
+            cursor.execute(sql)
             count = cursor.fetchone()
             return count["count"]
         except Exception as e:
-            return f"{e}"
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
 
 
+    def count_critical_missions(self):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        sql = """
+        SELECT COUNT(*) as count FROM missions WHERE
+        status = Critical;"""
+        try:
+            cursor.execute(sql)
+            count = cursor.fetchone()
+            return count["count"]
+        except Exception as e:
+            return f"Error: {e}"
+        finally:
+            cursor.close()
+            conn.close()
+
+
+
 if __name__ == "__main__":
     mission_manager = MissionDB(DbConnection())
+    data1 = {"title": "engine", "description": "to engine", "location": "Rashbam", "difficulty": 7, "importance": 9}
+    print(mission_manager.create_mission(data1))
     print(mission_manager.get_all_missions())
     # print(mission_manager.assign_mission(1, 1))
     # print(mission_manager.update_mission_status(1, 'IN_PROGRESS'))

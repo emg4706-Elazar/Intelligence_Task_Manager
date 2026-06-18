@@ -4,37 +4,44 @@ from database.db_connection import DbConnection
 
 class AgentDB:
     def __init__(self, connection: DbConnection):
-        self.connection = DbConnection()
+        self.connection = connection
 
 
     def create_agent(self, data):
-        columns = list([str(key) for key in data])
-        values = list([data[key] for key in data])
+        if not data:
+            return None
+
+        columns = ", ".join(data.keys())
+        placeholders = ", ".join(["%s"] * len(data))
+        values = list(data.values())
         conn = self.connection.get_connection()
-        cursor = conn.cursor()
-        sql = """
-        INSERT INTO agents (%s) VALUES %s;
-        """
-        cursor.execute(sql, (columns, values))
-        conn.commit()
-        new_id = cursor.lastrowid
-        cursor.execute("""
-        SELECT * FROM agents WHERE id = %s """, new_id)
-        new_agent = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        return new_agent
+        cursor = conn.cursor(dictionary=True)
+        sql = f"INSERT INTO agents ({columns}) VALUES ({placeholders});"
+        try:
+            cursor.execute(sql, values)
+            conn.commit()
+            new_id = cursor.lastrowid
+            cursor.execute("SELECT * FROM agents WHERE id = %s;", (new_id,))
+            new_agent = cursor.fetchone()
+            return new_agent
+        except Exception as e:
+            conn.rollback()
+            return f"Error as {e}"
+        finally:
+            cursor.close()
+            conn.close()
+
 
     def get_all_agents(self):
         conn = self.connection.get_connection()
         cursor = conn.cursor(dictionary=True)
-        sql = """SELECT * FROM agents;"""
+        sql = "SELECT * FROM agents;"
         try:
             cursor.execute(sql)
             rows = cursor.fetchall()
             return rows
         except Exception as e:
-            return f"{e}"
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -43,32 +50,39 @@ class AgentDB:
     def get_agent_by_id(self, id):
         conn = self.connection.get_connection()
         cursor = conn.cursor(dictionary=True)
-        sql = """SELECT * FROM agents WHERE id = %s;"""
+        sql = "SELECT * FROM agents WHERE id = %s;"
         try:
             cursor.execute(sql, (id,))
             row = cursor.fetchone()
             return row
         except Exception as e:
-            return f"{e}"
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
 
 
     def update_agent(self, id, data):
-        columns = list([str(key) for key in data])
-        values = list([data[key] for key in data])
+        if not data:
+            return False
+
+        set_clause = ", ".join([f"{key} = %s" for key in data.keys()])
+        values = list(data.values())
+        values.append(id)
         conn = self.connection.get_connection()
         cursor = conn.cursor()
-        sql = """
-        UPDATE agents (%s) VALUES %s WHERE id = %s;
-        """
-        cursor.execute(sql, (columns, values, id))
-        conn.commit()
-        rowcount = cursor.rowcount
-        cursor.close()
-        conn.close()
-        return rowcount > 0
+        sql = f"UPDATE agents SET {set_clause} WHERE id = %s;"
+        try:
+            cursor.execute(sql, values)
+            conn.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            conn.rollback()
+            return f"Error: {e}"
+        finally:
+            cursor.close()
+            conn.close()
+
 
     def deactivate_agent(self, id):
         conn = self.connection.get_connection()
@@ -77,10 +91,10 @@ class AgentDB:
         try:
             cursor.execute(sql, (id,))
             conn.commit()
-            rowcount = cursor.rowcount
-            return rowcount > 0
+            return cursor.rowcount > 0
         except Exception as e:
-            return f"{e}"
+            conn.rollback()
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -88,16 +102,14 @@ class AgentDB:
     def increment_completed(self, id):
         conn = self.connection.get_connection()
         cursor = conn.cursor()
-        sql = "UPDATE agents SET completed_missions = %s WHERE id = %s;"
+        sql = "UPDATE agents SET completed_missions = completed_missions + 1 WHERE id = %s;"
         try:
-            completed_missions = self.get_agent_by_id(id)["completed_missions"]
-            completed_missions += 1
-            cursor.execute(sql, (completed_missions, id))
+            cursor.execute(sql, (id,))
             conn.commit()
-            rowcount = cursor.rowcount
-            return rowcount > 0
+            return cursor.rowcount > 0
         except Exception as e:
-            return f"{e}"
+            conn.rollback()
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -105,16 +117,14 @@ class AgentDB:
     def increment_failed(self, id):
         conn = self.connection.get_connection()
         cursor = conn.cursor()
-        sql = "UPDATE agents SET failed_missions = %s WHERE id = %s;"
+        sql = "UPDATE agents SET failed_missions = failed_missions + 1 WHERE id = %s;"
         try:
-            failed_missions = self.get_agent_by_id(id)["failed_missions"]
-            failed_missions += 1
-            cursor.execute(sql, (failed_missions, id))
+            cursor.execute(sql, (id,))
             conn.commit()
-            rowcount = cursor.rowcount
-            return rowcount > 0
+            return cursor.rowcount > 0
         except Exception as e:
-            return f"{e}"
+            conn.rollback()
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -127,7 +137,7 @@ class AgentDB:
                 "total": total,
                 "failed": agent["failed_missions"],
                 "completed": agent["completed_missions"],
-                "success_rate": round((agent["completed_missions"]/total) * 100, 2)
+                "success_rate": round((agent["completed_missions"]/total) * 100, 2) if total > 0 else 0.0
             }
             return summary
         return None
@@ -136,13 +146,13 @@ class AgentDB:
     def count_active_agents(self):
         conn = self.connection.get_connection()
         cursor = conn.cursor(dictionary=True)
-        sql = """SELECT COUNT(*) as count FROM agents WHERE is_active = True;"""
+        sql = "SELECT COUNT(*) as count FROM agents WHERE is_active = True;"
         try:
             cursor.execute(sql)
             count = cursor.fetchone()
             return count["count"]
         except Exception as e:
-            return f"{e}"
+            return f"Error: {e}"
         finally:
             cursor.close()
             conn.close()
@@ -153,12 +163,12 @@ class AgentDB:
 connection_db = DbConnection()
 if __name__ == "__main__":
     age_manager = AgentDB(connection_db)
-    data1 = {"name": "Moshe", "specialty": "tech", "agent_rank": "Junior"}
-    # print(age_manager.create_agent(data1))
+    data1 = {"name": "Yoni", "specialty": "network", "agent_rank": "Commander"}
+    # print(age_manager.update_agent(3, data1))
 
     print(age_manager.get_all_agents())
-    print(age_manager.increment_failed(1))
-    print(age_manager.count_active_agents())
-    print(age_manager.increment_completed(1))
-    print(age_manager.get_agent_by_id(1))
-    print(age_manager.get_agent_performance(1))
+    # print(age_manager.increment_failed(1))
+    # print(age_manager.count_active_agents())
+    # print(age_manager.increment_completed(1))
+    # print(age_manager.get_agent_by_id(1))
+    # print(age_manager.get_agent_performance(1))
