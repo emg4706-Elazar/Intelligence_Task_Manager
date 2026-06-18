@@ -160,6 +160,7 @@ class AgentDB:
 
 
 
+
 connection_db = DbConnection()
 if __name__ == "__main__":
     age_manager = AgentDB(connection_db)

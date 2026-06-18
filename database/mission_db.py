@@ -7,9 +7,6 @@ class MissionDB:
         self.connection = connection
 
     def create_mission(self, data):
-        if not data:
-            return None
-
         columns = ", ".join(data.keys())
         placeholders = ", ".join(["%s"] * len(data))
         values = list(data.values())
@@ -55,7 +52,7 @@ class MissionDB:
             row = cursor.fetchone()
             return row
         except Exception as e:
-            return f"Error: {e}"
+            raise e
         finally:
             cursor.close()
             conn.close()
@@ -176,6 +173,27 @@ class MissionDB:
             cursor.close()
             conn.close()
 
+    # def get_top_agent(self):
+    #     conn = self.connection.get_connection()
+    #     cursor = conn.cursor(dictionary=True)
+    #     sql = """
+    #     SELECT assigned_agent_id, COUNT(*) as missions_completed_count"
+    #     FROM missions
+    #     WHERE status = 'COMPLETED'
+    #     GROUP BY assigned_agent_id
+    #     ORDER BY missions_completed_count DESC
+    #     LIMIT 1;"""
+    #     try:
+    #         cursor.execute(sql)
+    #         count = cursor.fetchone()
+    #         return count
+    #     except Exception as e:
+    #         return f"Error: {e}"
+    #     finally:
+    #         cursor.close()
+    #         conn.close()
+
+
 
 
 if __name__ == "__main__":
@@ -189,6 +207,7 @@ if __name__ == "__main__":
     print(mission_manager.get_mission_by_id(1))
     print(mission_manager.count_by_status('IN_PROGRESS'))
     print(mission_manager.count_all_missions())
+    print(mission_manager.get_top_agent())
 
 
 
