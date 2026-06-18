@@ -11,14 +11,17 @@ Missions and agents management system
 ## Structure Folder
 
 ```
-intelligence_task_manager/
-|-- database/
-|   |--db_connection.py
-|   |--agent_db.py
-|   |--mission.py
-|--README.md
-|--requirements.txt
-|--.gitignore
+intelligence-task-manager/ 
+├── main.py 
+├── database/ 
+├── routes/             
+│   ├── agent_routes.py 
+│   ├── mission_routes.py 
+│   └── report_routes.py 
+├── logs/                
+│   └── app.log 
+├── README.md            
+└── requirements.txt 
 ```
 
 
@@ -87,6 +90,44 @@ assigned_agent_id   INT
 | assigned_agent_id | int                                                                   | YES  |     | NULL    |                |
 +-------------------+-----------------------------------------------------------------------+------+-----+---------+----------------+
 ```
+
+
+
+## Endpoints
+
+### Agent Endpoints
+---
+________________________________________________
+| Method   | Endpoint תיאור                    |
+| [ POST ] | /agents חדש סוכן יצירת             |
+| [ GET ]  | /agents הסוכנים כל                 |
+| [ GET ]  | /agents/{id} לפי סוכן ID           |
+| [ PUT ]  | /agents/{id} סוכן עדכון            |
+| [ PUT ]  | /agents/{id}/deactivate סוכן השבתת  |
+| [ PUT ]  | /agents/{id}/performance סוכן ביצועי| 
+---
+
+
+### Missions Endpoint
+
+ Endpoint תיאור 
+ ] POST [  /missions משימה יצירת 
+ ] GET [  /missions המשימות כל
+[  /missions/{id} לפי משימה ID 
+ ] PUT [  /missions/{id}/assign/{agent_id} בהמשך( מוסבר בדיקות 6) לסוכן שיוך  
+ ] PUT [  /missions/{id}/start משימה התחלת 
+ ] PUT [  /missions/{id}/complete בהצלחה סיום 
+ ] PUT [  /missions/{id}/fail בכישלון סיום 
+ ] PUT [  /missions/{id}/cancel משימה ב
+
+
+### Report Endpoints
+
+Method Endpoint תיאור 
+ ] GET [  /reports/summary המערכת של כללי דוח 
+ ] GET [  /reports/missions-by-status סטטוס לפי משימות 
+ ] GET [  /reports/top-agent המצטיין ה
+
 
 
 ## System Rules

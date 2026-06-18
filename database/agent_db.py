@@ -1,5 +1,5 @@
 from database.db_connection import DbConnection
-
+from models.models import ProcessFailed
 
 
 class AgentDB:
@@ -26,7 +26,7 @@ class AgentDB:
             return new_agent
         except Exception as e:
             conn.rollback()
-            return f"Error as {e}"
+            raise ProcessFailed                        #return f"Error as {e}"
         finally:
             cursor.close()
             conn.close()
@@ -55,8 +55,8 @@ class AgentDB:
             cursor.execute(sql, (id,))
             row = cursor.fetchone()
             return row
-        except Exception as e:
-            return f"Error: {e}"
+        except:
+            raise Exception
         finally:
             cursor.close()
             conn.close()
@@ -164,7 +164,7 @@ connection_db = DbConnection()
 if __name__ == "__main__":
     age_manager = AgentDB(connection_db)
     data1 = {"name": "Yoni", "specialty": "network", "agent_rank": "Commander"}
-    # print(age_manager.update_agent(3, data1))
+    print(age_manager.update_agent(56, data1))
 
     print(age_manager.get_all_agents())
     # print(age_manager.increment_failed(1))
