@@ -36,8 +36,28 @@ def get_mission_by_id(id: int):
     return mission
 
 
-# @mission_router.put("/missions/{id}/assign/{agent_id}")
+@mission_router.put("/missions/{id}/assign/{agent_id}")
+def assign_mission(mission_id: int, agent_id: int):
+    mission = mission_db.get_mission_by_id(mission_id)
+    if not mission:
+        raise HTTPException(status_code=404, detail="Mission not found")
+    agent = agent_db.get_agent_by_id(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    if mission["status"] != 'NEW':
+        raise HTTPException(status_code=400, detail="Bad request")
+    if not agent["is_active"]:
+        raise HTTPException(status_code=400, detail="Bad request")
+    open_missions = mission_db.get_open_missions_by_agent(agent_id)
+    if len(open_missions) >= mission_db.MAX_OPEN_MISSIONS:
+        raise HTTPException(status_code=400, detail="Bad request")
+    if mission["risk_level"] == 'CRITICAL' and \
+            agent["agent_rank"] == 'JUNIOR' or agent["agent_rank"] == 'SENIOR':
+        raise HTTPException(status_code=400, detail="Bad request")
 
+    mission_db.assign_mission(mission_id, agent_id)
+    mission_db.update_mission_status(mission_id, 'ASSIGNED')
+    return 'ASSIGNED'
 
 
 @mission_router.put("/missions/{id}/start")
@@ -82,10 +102,10 @@ def cancel_mission(id: int):
     mission = mission_db.get_mission_by_id(id)
     if not mission:
         raise HTTPException(status_code=404, detail="Mission not found")
-    if not mission["status"] == 'ASSIGNED' or 'NEW':
+    if mission["status"] != ('ASSIGNED' or 'NEW'):
         raise HTTPException(status_code=400, detail="Bad request")
-    mission_db.update_mission_status(id, 'CANCELED')
-    return 'CANCELED'
+    mission_db.update_mission_status(id, 'CANCELLED')
+    return 'CANCELLED'
 
 
 

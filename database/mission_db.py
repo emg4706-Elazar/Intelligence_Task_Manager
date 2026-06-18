@@ -3,6 +3,7 @@ from database.db_connection import DbConnection
 
 
 class MissionDB:
+    MAX_OPEN_MISSIONS = 3
     def __init__(self, connection: DbConnection):
         self.connection = connection
 
@@ -173,25 +174,25 @@ class MissionDB:
             cursor.close()
             conn.close()
 
-    # def get_top_agent(self):
-    #     conn = self.connection.get_connection()
-    #     cursor = conn.cursor(dictionary=True)
-    #     sql = """
-    #     SELECT assigned_agent_id, COUNT(*) as missions_completed_count"
-    #     FROM missions
-    #     WHERE status = 'COMPLETED'
-    #     GROUP BY assigned_agent_id
-    #     ORDER BY missions_completed_count DESC
-    #     LIMIT 1;"""
-    #     try:
-    #         cursor.execute(sql)
-    #         count = cursor.fetchone()
-    #         return count
-    #     except Exception as e:
-    #         return f"Error: {e}"
-    #     finally:
-    #         cursor.close()
-    #         conn.close()
+    def get_top_agent(self):
+        conn = self.connection.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        sql = """
+        SELECT assigned_agent_id, COUNT(*) as missions_completed_count"
+        FROM missions
+        WHERE status = 'COMPLETED'
+        GROUP BY assigned_agent_id
+        ORDER BY missions_completed_count DESC
+        LIMIT 1;"""
+        try:
+            cursor.execute(sql)
+            count = cursor.fetchone()
+            return count
+        except Exception as e:
+            return f"Error: {e}"
+        finally:
+            cursor.close()
+            conn.close()
 
 
 

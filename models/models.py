@@ -4,7 +4,7 @@ from typing import Literal
 class Agent(BaseModel):
     name: str
     specialty: str
-    agent_rank: Literal['Junior', 'Senior', 'Commander']
+    agent_rank: str
 
 
 

@@ -12,6 +12,8 @@ agent_router = APIRouter()
 @agent_router.post("/agents", status_code=201)
 def post_agent(data: Agent):
     data = data.model_dump()
+    if data["agent_rank"] not in ['Junior', 'Senior', 'Commander']:
+        raise HTTPException(status_code=400, detail="Wrong rank")
     try:
         new_agent = agent_db.create_agent(data)
         return new_agent
